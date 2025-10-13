@@ -11,7 +11,7 @@ def main():
 
     spark = SparkSessionSingleton.get_instance("IBEX35-Practice1")
     btch_ctrl = BatchController(spark, TICKERS, START_DATE, END_DATE)
-    str_ctrl = StreamingController(spark, TICKERS)
+    str_ctrl = StreamingController(spark)
 
     # Silenciar logs de spark
     spark.sparkContext.setLogLevel("ERROR")

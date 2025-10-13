@@ -4,7 +4,7 @@ import yfinance as yf
 from datetime import datetime
 from pyspark.sql import Row
 from pyspark.sql import functions as F
-from model.logic.additioners import compute_daily_open_hgh_lw_close
+from model.logic.additioners import compute_daily_open_high_low_close
 from model.persistence.schema_definition import _STREAM_SCHEMA
 from config.settings import STREAM_HOST, STREAM_PORT
 import os
@@ -54,7 +54,7 @@ def create_streaming_context(spark:SparkSession) -> StreamingContext:
         df.show(10, truncate=False)
 
         # Ejercicio6
-        df = compute_daily_open_hgh_lw_close(df)
+        df = compute_daily_open_high_low_close(df)
         df.show(10, truncate=False)
 
 
