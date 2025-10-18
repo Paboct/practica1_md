@@ -16,7 +16,7 @@ _SCHEMA = StructType([
 
 # Esquema para datos streaming
 _STREAM_SCHEMA = StructType([
-    StructField("Ticker",  StringType(), True),
+    StructField("ticker",  StringType(), True),
     StructField("price",   DoubleType(), True),
     StructField("high",    DoubleType(), True),
     StructField("low",     DoubleType(), True),

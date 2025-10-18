@@ -49,7 +49,7 @@ def create_streaming_context(spark:SparkSession) -> StreamingContext:
         if rdd.isEmpty():
             return
         
-        # Parseo JSON y lo convierto en DataFrame
+        # Convierto el RDD (Colección distribuida de datos) en DataFrame
         df = spark.read.json(rdd, schema=_STREAM_SCHEMA)
 
         # Obtengo el timestamp actual
@@ -62,17 +62,19 @@ def create_streaming_context(spark:SparkSession) -> StreamingContext:
         eurusd = _get_eurusd()
 
         # Limpio y añado las nuevas columnas
-        df = (df.dropna(subset=["Ticker", "price"])
+        df = (df.dropna(subset=["ticker", "price"])
               .withColumn("Date", F.lit(actual_date).cast("date"))
               .withColumn("Time", F.lit(actual_time).cast("string"))
               .withColumn("Weekday", F.lit(weekday).cast("int"))
               .withColumn("eurusd", F.lit(eurusd).cast("double"))
+              .withColumn("Timestamp", F.current_timestamp()) #
         )
 
         print(f"Batch recibido el {actual_date} a las {actual_time}")
         df.show(10, truncate=False)
 
         # Ejercicio6
+        print("Cálculo de valores diarios por ticker:")
         df = compute_daily_open_high_low_close(df)
         df.show(10, truncate=False)
 

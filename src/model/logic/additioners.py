@@ -21,30 +21,33 @@ def add_open_gap(df: DataFrame) -> DataFrame:
 
 def compute_daily_open_high_low_close(df: DataFrame) -> DataFrame:
     """
-    Ej6: Calcula Open, High, Low y Close diarios a partir de los tickers:
-    - Ticker: string
-    - price: double
-    - Date: timestamp (momento de recepción del dato)
-    -volume: long
-    Devuelve: Ticker, day (date), Open, High, Low, Close
+    Ej6: Calcula Open, High, Low y Close diarios a partir de ticks en tiempo real.
+    Requisitos de columnas:
+      - ticker (string)
+      - price  (double)
+      - Date   (date)         # día de la sesión
+      - Timestamp (timestamp) # instante de llegada/lectura (para ordenar)
+      - volume (long)         # opcional
+    Devuelve: ticker, day, Open, High, Low, Close, volume
     """
-    # Agrego la clave day
-    df = df.withColumn("day", F.to_date("Date"))
+    df = df.withColumn("day", F.col("Date").cast("date"))
 
-    w_open = Window.partitionBy("Ticker", "day").orderBy(F.col("Date").asc())
-    w_close = Window.partitionBy("Ticker", "day").orderBy(F.col("Date").desc())
+    w_open  = Window.partitionBy("ticker", "day").orderBy(F.col("Timestamp").asc())
+    w_close = Window.partitionBy("ticker", "day").orderBy(F.col("Timestamp").desc())
 
-    # Añadir columnas Open y Close, donde sus valores son los primeros de la ventana
-    df_open_close = df.withColumn("Open", F.first("price").over(w_open))
-    df_open_close = df_open_close.withColumn("Close", F.first("price").over(w_close))
-    
-    # Añado las columnas High y Low
-    df_open_close = df_open_close.groupBy("Ticker", F.to_date("Date").alias("day")) \
-                        .agg(F.max("price").alias("High"),
-                             F.min("price").alias("Low"),
-                                F.first("Open").alias("Open"),
-                                F.first("Close").alias("Close"),
-                                F.sum("volume").cast("long").alias("volume") if "volume" in df.columns else F.lit(0).cast("long").alias("volume")
-                             ).orderBy("Ticker", "day")
+    # Open y Close por ventana
+    df_oc = (df
+             .withColumn("Open",  F.first("price").over(w_open))
+             .withColumn("Close", F.first("price").over(w_close)))
 
-    return df_open_close
+    # Agregación ¡High/Low, Open/Close y volume
+    result = (df_oc
+              .groupBy("ticker", "day")
+              .agg(F.max("price").alias("High"),
+                   F.min("price").alias("Low"),
+                   F.first("Open").alias("Open"),
+                   F.first("Close").alias("Close"),
+                   F.sum("volume").cast("long").alias("volume"))
+              .orderBy("ticker", "day"))
+
+    return result

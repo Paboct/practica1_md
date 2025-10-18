@@ -63,10 +63,3 @@ def show_schema(df: DataFrame, title: str = "") -> None:
         print(f"\n----{title}----")
 
     df.printSchema()
-
-def show_streaming_batch_info(df:DataFrame, time, eurusd:float) -> None:
-    """
-    Muestra información adicional de cada batch recibido en streaming
-    """
-    print(f"\nBatch recibido a las {time} | EUR/USD = {eurusd}")
-    df.show(truncate=False)
