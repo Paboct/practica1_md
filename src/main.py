@@ -1,7 +1,7 @@
 from controller.btchController import BatchController
 from controller.strmController import StreamingController
 from model.sparkSession import SparkSessionSingleton
-from view.console_view import show_head, show_schema, show_streaming_batch_info
+from view.console_view import show_weekday, show_head, show_opengap, show_schema, show_streaming_batch_info, show_comments_to_question_1b, show_response_to_question_1
 from config.settings import TICKERS, START_DATE, END_DATE
 import pyspark.sql.functions as F
 import os
@@ -18,18 +18,22 @@ def main():
 
     output = btch_ctrl.exec_pipeline()
 
-    print("\n=== Resultados del procesamiento por lotes ===")
+    print("\nResultados del procesamiento por lotes")
+    show_response_to_question_1()
+    print("\n")
+    show_comments_to_question_1b()
     show_schema(output["historic"], "Schema histórico limpio")
-    show_head(output["historic"], 5, "Top 5 histórico (todos los tickers)")
-
     for ticker in TICKERS:
-        show_head(output["weekday"].filter(F.col("Ticker") == ticker), 5, f"Top 5 {ticker} con columna weekday")
+        show_head(output["historic"].filter(F.col("Ticker") == ticker), 5, f"Top 5 histórico {ticker}")
+    
+    print("\n")
+    show_weekday(TICKERS, output, 5)
+    print("\n")
+    print("\n")
+    show_opengap(TICKERS, output, 5)
 
-    for ticker in TICKERS:
-        show_head(output["opengap"].filter(F.col("Ticker") == ticker), 5, f"Top 5 {ticker} con columna open gap")
-
-    print("\n=== Resultados del procesamiento en streaming ===")
-    str_ctrl.run_streaming_pipeline()
+    #print("\nResultados del procesamiento en streaming")
+    #str_ctrl.run_streaming_pipeline()
 
 if __name__ == "__main__":
     main()

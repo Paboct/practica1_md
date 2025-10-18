@@ -8,16 +8,16 @@ def add_weekday_column(df: DataFrame) -> DataFrame:
     cuando se registró la sesión (1=Monday, 7=Sunday) cuyo tipo es Integer.
     La columna de Date tiene formato yyyy-MM-dd
     """
-    return df.withColumn("Weekday", F.date_format(F.col("Date"), "u").cast("int"))
+    return df.withColumn("Weekday", F.dayofweek(F.col("Date")))
 
 def add_open_gap(df: DataFrame) -> DataFrame:
     """
-    Ej3: Añade el open gap entre sesiones (%): ((Close de hoy / Open de hoy) - 1) * 100
+    Ej3: Añade el open gap entre sesiones (%): ((Close del día anterior / Open de hoy) - 1) * 100
     """
     w = Window.partitionBy("Ticker").orderBy(F.col("Date").asc())
     df_prev = df.withColumn("Prev_Close", F.lag(F.col("Close")).over(w))
 
-    return df_prev.withColumn("OpenGap", ((F.col("Open") / F.col("Prev_Close")) - 1) * 100).drop("Prev_Close")
+    return df_prev.withColumn("OpenGap", ((F.col("Prev_Close") / F.col("Open")) - 1) * 100).drop("Prev_Close")
 
 def compute_daily_open_high_low_close(df: DataFrame) -> DataFrame:
     """

@@ -9,7 +9,7 @@ def clean_and_validate_ticker(df: DataFrame) -> DataFrame:
     # Eliminar duplicados de fecha y ticker
     df_cleaned_validated = df.dropDuplicates(subset=["Date", "Ticker"])
 
-    # Eliminar filas donde Date o Ticker sean nulos
+    # Eliminar filas donde Date, Ticker o ambos sean nulos
     df_cleaned_validated = df_cleaned_validated.dropna(subset=["Date", "Ticker"])
     
     # Filtramos para quedarnos con precios positivos

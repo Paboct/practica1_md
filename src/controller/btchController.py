@@ -55,6 +55,14 @@ class BatchController:
         for ticker in self.tickers:
             save_if_not_exists(df, ticker)
 
+    def _delete_parquet(self, tickers:List[str]) -> None:
+        """
+        Elimina los datos en formato Parquet de una lista
+        de tickers específicos.
+        """
+        for ticker in tickers:
+            delete_data_from_ticker(ticker)
+
     def _add_weekday(self, df:DataFrame) -> DataFrame:
         """
         Añade una columna que indica el día de la semana.
@@ -89,9 +97,20 @@ class BatchController:
         df_all = self._download_data()
         df_clean = self._clean(df_all)
         self._save_parquet(df_clean)
+        print(df_clean.collect()[0][-1])
         df_weekday = self._add_weekday(df_clean)
         df_gap = self._add_open_gap(df_weekday)
+        # Tengo que guardar el df_gap para el parquet de sus ticker correspondiente, es decir
+        # Tengo que reescribir los datos de los ticker con la nueva columna
 
+        # Actualizo los datos en el parquet
+        # Primero elimino los datos en el parquet anterior (Con parquet, no tendría por qué borrar para quitar esos datos y añadir los nuevos,
+        # podría simplemente hacer un overwrite, pero así hago uso de la función de delete que he implementado)
+        self._delete_parquet(self.tickers)
+
+        # Luego añado los datos nuevos en la columna adicional
+        self._save_parquet(df_gap)
+    
         return {
             "historic": df_clean,
             "weekday": df_weekday,

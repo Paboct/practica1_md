@@ -13,8 +13,18 @@ def _get_eurusd() -> float:
     """
     Función auxiliar que obtiene el valor actual del EURUSD
     """
-    df = yf.download("EURUSD=X", period="1d", interval="1m", progress=False, auto_adjust=True)
-    return df["Close"].iloc[-1]
+    try:
+        ticker = yf.Ticker("EURUSD=X") # Crear el objeto Ticker para EURUSD
+        price = ticker.fast_info['lastPrice']  # Obtener el precio actual
+        
+        if price is None:
+            raise ValueError("No se pudo obtener el precio de EUR/USD")        
+        
+        return float(price)
+    
+    except Exception as e:
+        print(f"Error al obtener el precio de EUR/USD: {e}")
+        return 1.0
 
 def create_streaming_context(spark:SparkSession) -> StreamingContext:
     """
@@ -30,27 +40,36 @@ def create_streaming_context(spark:SparkSession) -> StreamingContext:
     ssc = StreamingContext(sc, batchDuration=10)
 
     # Conexión al socket
-    lines = ssc.socketTextStream(STREAM_HOST, STREAM_PORT)
+    lines = ssc.socketTextStream(STREAM_HOST, STREAM_PORT) # Por socket llega siempre texto
     
-    def process_rdd(time, rdd):
+    def process_rdd(rdd):
+        """
+        Función que procesa cada RDD (micro-lote) recibido en streaming
+        """
         if rdd.isEmpty():
             return
         
         # Parseo JSON y lo convierto en DataFrame
         df = spark.read.json(rdd, schema=_STREAM_SCHEMA)
 
-        # Añadir la fecha y el EUR/USD
-        ts = datetime.now()
+        # Obtengo el timestamp actual
+        now = datetime.now()
+        actual_date = now.strftime("%Y-%m-%d")
+        actual_time = now.strftime("%H:%M:%S")
+        weekday = now.weekday() + 1 # Lunes=1 ... Domingo=7
+
+        # Obtengo el timestamp completo
         eurusd = _get_eurusd()
 
-        # Limpio y transformo los datos
-        df = (df
-              .dropna(subset=["Ticker", "price"])
-              .withColumn("Date",   F.lit(ts).cast("timestamp"))
+        # Limpio y añado las nuevas columnas
+        df = (df.dropna(subset=["Ticker", "price"])
+              .withColumn("Date", F.lit(actual_date).cast("date"))
+              .withColumn("Time", F.lit(actual_time).cast("string"))
+              .withColumn("Weekday", F.lit(weekday).cast("int"))
               .withColumn("eurusd", F.lit(eurusd).cast("double"))
         )
 
-        print(f"========= Batch recibido a las {str(ts)} =========")
+        print(f"Batch recibido el {actual_date} a las {actual_time}")
         df.show(10, truncate=False)
 
         # Ejercicio6
