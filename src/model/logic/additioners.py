@@ -40,14 +40,10 @@ def compute_daily_open_high_low_close(df: DataFrame) -> DataFrame:
              .withColumn("Open",  F.first("price").over(w_open))
              .withColumn("Close", F.first("price").over(w_close)))
 
-    # Agregación ¡High/Low, Open/Close y volume
-    result = (df_oc
-              .groupBy("ticker", "day")
+    # Agregación para calcular High, Low y volume
+    result = df_oc.groupBy("ticker", "day") \
               .agg(F.max("price").alias("High"),
                    F.min("price").alias("Low"),
-                   F.first("Open").alias("Open"),
-                   F.first("Close").alias("Close"),
-                   F.sum("volume").cast("long").alias("volume"))
-              .orderBy("ticker", "day"))
+                   F.sum("volume").cast("long").alias("volume")).orderBy("ticker", "day")
 
     return result
