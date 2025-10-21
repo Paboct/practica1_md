@@ -1,51 +1,49 @@
 from pyspark.sql import SparkSession
-from model.datasources.streamingClient import create_streaming_context
+from pyspark.sql import DataFrame
+from pyspark.streaming import StreamingContext
+from model.datasources.streamingClient import process_rdd, DFF_GLOBAL
+from config.settings import STREAM_HOST, STREAM_PORT
 
 class StreamingController:
     """
     Controlador para gestionar la lógica de streaming.
-    Coordina la conexión, procesamiento y visualización de datos en tiempo real.
+    Crea el contexto de streaming y ejecuta el pipeline.
     """
 
-    def __init__(self, spark:SparkSession):
-        self.spark = spark
-        self.ssc = None
+    def __init__(self, spark_session:SparkSession) -> None:
+        self.ssc = StreamingContext(spark_session.sparkContext, batchDuration=10)
+        self.spark = spark_session
 
-    def start(self) -> None:
+    def start_streaming(self) -> None:
         """
-        Inicializa el contexto de streaming.
+        Ej4: Crea una conexión que permita recibir los datos en tiempo real.
+        Inicia el contexto de streaming.
         """
-        if self.ssc is None:
-            self.ssc = create_streaming_context(self.spark)
-            self.ssc.start()
+        lines = self.ssc.socketTextStream(STREAM_HOST, STREAM_PORT)
+        
+        # Aplico la función de proceso a cada RDD recibido
+        lines.foreachRDD(lambda rdd: process_rdd(self.spark, rdd))
 
-    def await_termination(self) -> None:
-        """
-        Espera a que el streaming termine.
-        """
-        if self.ssc is not None:
-            self.ssc.awaitTermination()
+        # Inicia el proceso streaming
+        self.ssc.start()
 
-    def stop(self) -> None:
-        """
-        Detiene el contexto de streaming.
-        Aunque la sesión de Spark permanece activa.
-        """
-        if self.ssc is not None:
-            self.ssc.stop(stopSparkContext=False, stopGraceFully=True)
-            self.ssc = None
-
-    def run_streaming_pipeline(self) -> None:
-        """
-        Inicia el proceso de streaming.
-        """
-        print("Iniciando el proceso de streaming...")
-        self.start()
         try:
-            self.await_termination()
-        
-        except KeyboardInterrupt:
-            print("Deteniendo el streaming...")
-        
-        finally:
-            self.stop()
+            # Bloqueo el hilo principal hasta que se detenga el streaming
+            self.ssc.awaitTerminationOrTimeout(140)
+
+        except Exception as e:
+            print(f"Error en el streaming: {e}")
+            self.ssc.stop(stopSparkContext=False, stopGraceFully=True)
+
+        # Una vez finalizado, detengo el streaming
+        self.ssc.stop(stopSparkContext=False, stopGraceFully=True)
+
+        # Una vez finalizado el streaming, imprimo mensaje
+        print("Streaming finalizado.")
+
+    def get_dataframe(self) -> DataFrame:
+        """
+        Devuelve el DataFrame global con todos los datos recibidos en streaming.
+        """
+        global DFF_GLOBAL
+        return DFF_GLOBAL
