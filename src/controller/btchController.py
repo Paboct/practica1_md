@@ -96,7 +96,7 @@ class BatchController:
         
         df_all = self._download_data()
         df_clean = self._clean(df_all)
-        self._save_parquet(df_clean)
+        #self._save_parquet(df_clean)
         print(df_clean.collect()[0][-1])
         df_weekday = self._add_weekday(df_clean)
         df_gap = self._add_open_gap(df_weekday)
@@ -106,10 +106,10 @@ class BatchController:
         # Actualizo los datos en el parquet
         # Primero elimino los datos en el parquet anterior (Con parquet, no tendría por qué borrar para quitar esos datos y añadir los nuevos,
         # podría simplemente hacer un overwrite, pero así hago uso de la función de delete que he implementado)
-        self._delete_parquet(self.tickers)
+        #self._delete_parquet(self.tickers)
 
         # Luego añado los datos nuevos en la columna adicional
-        self._save_parquet(df_gap)
+        #self._save_parquet(df_gap)
     
         return {
             "historic": df_clean,

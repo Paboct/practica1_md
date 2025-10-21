@@ -14,26 +14,26 @@ def main():
     str_ctrl = StreamingController(spark)
 
     # Silenciar logs de spark
-    spark.sparkContext.setLogLevel("ERROR")
+    spark.sparkContext.setLogLevel("FATAL")
 
-    #output = btch_ctrl.exec_pipeline()
-#
+    output = btch_ctrl.exec_pipeline()
+
     #print("\nResultados del procesamiento por lotes")
-    #show_response_to_question_1()
-    #print("\n")
-    #show_comments_to_question_1b()
-    #show_schema(output["historic"], "Schema histórico limpio")
-    #for ticker in TICKERS:
-    #    show_head(output["historic"].filter(F.col("Ticker") == ticker), 5, f"Top 5 histórico {ticker}")
-    #
-    #print("\n")
-    #show_weekday(TICKERS, output, 5)
-    #print("\n")
-    #print("\n")
-    #show_opengap(TICKERS, output, 5)
-#
+    show_response_to_question_1()
+    print("\n")
+    show_comments_to_question_1b()
+    show_schema(output["historic"], "Schema histórico limpio")
+    for ticker in TICKERS:
+        show_head(output["historic"].filter(F.col("Ticker") == ticker), 5, f"Top 5 histórico {ticker}")
+    
+    print("\n")
+    show_weekday(TICKERS, output, 5)
+    print("\n")
+    print("\n")
+    show_opengap(TICKERS, output, 5)
     print("\nResultados del procesamiento en streaming")
-    str_ctrl.run_streaming_pipeline()
+    str_ctrl.start_streaming()
 
+    
 if __name__ == "__main__":
     main()
