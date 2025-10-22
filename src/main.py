@@ -33,15 +33,15 @@ def main():
     #print("\n")
     #show_opengap(TICKERS, output, 5)
     print("\nResultados del procesamiento en streaming")
-    str_ctrl.start_streaming()
+    #str_ctrl.start_streaming()
 
-    # Mostrar resultados del procesamiento en streaming
-    dff_global = str_ctrl.get_dataframe()
-
-    print("\nDataFrame global recibido en streaming:"  )
-    if dff_global is not None:
-        dff_global.show(400, truncate=False)
-
+    # Una vez recibidos los muestro
+    for ticker in TICKERS:
+        df_stream = str_ctrl.get_df_of_ticker_streaming(ticker)
+        show_head(df_stream, 15, f"Top 15 streaming {ticker}")
+        df_metrics = str_ctrl.compute_streaming_metrics(df_stream)
+        print()
+        show_head(df_metrics, 15, f"Top 15 streaming Open, High, Low, Volume {ticker}")
 
 if __name__ == "__main__":
     main()

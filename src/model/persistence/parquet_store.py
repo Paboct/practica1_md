@@ -1,14 +1,15 @@
 from pyspark.sql import DataFrame
-from config.settings import _PARQUET_BATCH_PATH
+from config.settings import _PARQUET_BATCH_PATH, _PARQUET_STREAM_PATH
 import os
+from pyspark.sql import SparkSession
 import shutil
 
-def _get_parquet_path(ticker:str) -> str:
+def _get_parquet_path(ticker:str, path:str=_PARQUET_BATCH_PATH) -> str:
     """
     Función auxiliar para obtener la ruta completa del parquet de un ticker
     """
     reg_exp = ticker.replace(".", "_")
-    return os.path.join(_PARQUET_BATCH_PATH, f"{reg_exp}")
+    return os.path.join(path, f"{reg_exp}")
 
 def _check_ticker_existance(path:str) -> bool:
     """
@@ -45,17 +46,30 @@ def delete_data_from_ticker(ticker:str) -> None:
     else:
         print(f"·No existen datos del ticker {ticker} en la ruta {path}. No se puede eliminar.")
 
-def append_data_to_ticker(df: DataFrame, ticker:str) -> None:
+def append_data_to_ticker(df: DataFrame, ticker:str, path_espec:str=_PARQUET_BATCH_PATH) -> None:
     """
     Ej1d: Añade datos al parquet de un ticker específico.
     """
-    path = _get_parquet_path(ticker)
+    path = _get_parquet_path(ticker, path_espec)
 
     # Compruebo que existen los datos del ticker
-    if _check_ticker_existance(path):
+    if not _check_ticker_existance(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         print(f"Datos del ticker {ticker} encontrados en la ruta {path}. Añadiendo nuevos datos...")
-        df.write.mode("append").parquet(path)
-        print(f"Nuevos datos del ticker {ticker} añadidos correctamente.")
+        
+    # Ahora añado los datos
+    df.write.mode("append").parquet(path)
+    print(f"Nuevos datos del ticker {ticker} añadidos correctamente.")
 
-    else:
-        print(f"No existen datos del ticker {ticker} en la ruta {path}. No se pueden añadir nuevos datos.")
+def read_ticker_from_parquet(spark:SparkSession, ticker:str, path_espec:str=_PARQUET_BATCH_PATH) -> DataFrame:
+    """
+    Lee un parquet de un ticker específico y devuelve el DataFrame correspondiente.
+    """
+    path = _get_parquet_path(ticker, path_espec)
+
+    # Compruebo que existen los datos del ticker
+    if not _check_ticker_existance(path):
+        raise FileNotFoundError(f"No existen datos del ticker {ticker} en la ruta {path}.")
+
+    df = spark.read.parquet(path, index=False)
+    return df

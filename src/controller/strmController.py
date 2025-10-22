@@ -1,8 +1,9 @@
 from pyspark.sql import SparkSession
 from pyspark.sql import DataFrame
 from pyspark.streaming import StreamingContext
-from model.datasources.streamingClient import process_rdd, DFF_GLOBAL
-from config.settings import STREAM_HOST, STREAM_PORT
+from model.logic.additioners import compute_daily_open_high_low_close
+from model.datasources.streamingClient import start_streaming_context, get_dataframe
+from config.settings import STREAM_HOST, STREAM_PORT, _PARQUET_STREAM_PATH
 
 class StreamingController:
     """
@@ -11,39 +12,24 @@ class StreamingController:
     """
 
     def __init__(self, spark_session:SparkSession) -> None:
-        self.ssc = StreamingContext(spark_session.sparkContext, batchDuration=10)
-        self.spark = spark_session
+        self.session = spark_session
 
     def start_streaming(self) -> None:
         """
-        Ej4: Crea una conexión que permita recibir los datos en tiempo real.
-        Inicia el contexto de streaming.
+        Inicia el contexto de streaming y comienza a procesar los datos entrantes.
         """
-        lines = self.ssc.socketTextStream(STREAM_HOST, STREAM_PORT)
-        
-        # Aplico la función de proceso a cada RDD recibido
-        lines.foreachRDD(lambda rdd: process_rdd(self.spark, rdd))
+        start_streaming_context(self.session)
 
-        # Inicia el proceso streaming
-        self.ssc.start()
-
-        try:
-            # Bloqueo el hilo principal hasta que se detenga el streaming
-            self.ssc.awaitTerminationOrTimeout(140)
-
-        except Exception as e:
-            print(f"Error en el streaming: {e}")
-            self.ssc.stop(stopSparkContext=False, stopGraceFully=True)
-
-        # Una vez finalizado, detengo el streaming
-        self.ssc.stop(stopSparkContext=False, stopGraceFully=True)
-
-        # Una vez finalizado el streaming, imprimo mensaje
-        print("Streaming finalizado.")
-
-    def get_dataframe(self) -> DataFrame:
+    def get_df_of_ticker_streaming(self, ticker:str) -> DataFrame:
         """
-        Devuelve el DataFrame global con todos los datos recibidos en streaming.
+        Devuelve el dataframe de un ticker que se ha
+        obtenido en tiempo real
         """
-        global DFF_GLOBAL
-        return DFF_GLOBAL
+        return get_dataframe(self.session, ticker, _PARQUET_STREAM_PATH)
+    
+    def compute_streaming_metrics(self, df:DataFrame) -> DataFrame:
+        """
+        Devuelve el dataframe, una vez aplicados los cambios
+        del ejercicio 6
+        """
+        return compute_daily_open_high_low_close(df)

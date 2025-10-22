@@ -1,5 +1,7 @@
 from pyspark.sql import SparkSession
+from pyspark.streaming import StreamingContext
 from pyspark.rdd import RDD
+from pyspark.sql import DataFrame
 import yfinance as yf
 from datetime import datetime
 from pyspark.sql import Row
@@ -7,9 +9,9 @@ from pyspark.sql import functions as F
 from model.logic.additioners import compute_daily_open_high_low_close
 from model.persistence.schema_definition import _STREAM_SCHEMA
 from config.settings import STREAM_HOST, STREAM_PORT
+from model.persistence.parquet_store import append_data_to_ticker, read_ticker_from_parquet
+from config.settings import _PARQUET_STREAM_PATH
 import os
-
-DFF_GLOBAL = None
 
 def _get_eurusd() -> float:
     """
@@ -28,15 +30,31 @@ def _get_eurusd() -> float:
         print(f"Error al obtener el precio de EUR/USD: {e}")
         return 1.0
 
-
-def process_rdd(spark:SparkSession, rdd:RDD) -> None:
+def start_streaming_context(spark:SparkSession) -> StreamingContext:
     """
-    Ej5: Procesa cada RDD (micro-lote) recibido en streaming.
+    Ej4: Crea una conexión que permite recibir datos en streaming
+    Ej5: Recoge TODOS los datos JSON recibidos y, por micro-lote:
+         - los convierte en DataFrame,
+         - añade la fecha (Date = timestamp de recepción),
+         - añade el EUR/USD del momento,
+         - y los muestra por consola.
     """
-    global DFF_GLOBAL
+    # Creo el contexto de streaming y la frecuencia de batches
+    sc = spark.sparkContext
+    ssc = StreamingContext(sc, batchDuration=10)
 
-    if not rdd.isEmpty():
-        # Convierto el RDD en dataframe
+    # Conexión al socket
+    lines = ssc.socketTextStream(STREAM_HOST, STREAM_PORT) # Por socket llega siempre texto
+    
+    def process_rdd(rdd):
+        """
+        Función que procesa cada RDD (micro-lote) recibido en streaming
+        """
+        if rdd.isEmpty():
+            print("No se han recibido datos en este micro-lote.")
+            return
+        
+        # Convierto el RDD (Colección distribuida de datos) en DataFrame
         df = spark.read.json(rdd, schema=_STREAM_SCHEMA)
 
         # Obtengo el timestamp actual
@@ -56,71 +74,38 @@ def process_rdd(spark:SparkSession, rdd:RDD) -> None:
               .withColumn("eurusd", F.lit(eurusd).cast("double"))
               .withColumn("Timestamp", F.current_timestamp()) #
         )
-        # Actualizo el dataframe global
-        if DFF_GLOBAL is None:
-            DFF_GLOBAL = df
-
-        else:
-            DFF_GLOBAL = DFF_GLOBAL.unionByName(df)
 
         print(f"Batch recibido el {actual_date} a las {actual_time}")
+        #df.show(10, truncate=False)
+        # Almaceno el DataFrame en el parquet para cada ticker
+        for ticker in df.select("ticker").distinct().collect():
+            ticker_str = ticker['ticker']
+            df_ticker = df.filter(F.col("ticker") == ticker_str)
+            append_data_to_ticker(df_ticker, ticker_str, _PARQUET_STREAM_PATH)
 
+        # Ejercicio6
+        #print(f"Cálculo de valores diarios por cada ticker")
+        #df = compute_daily_open_high_low_close(df)
+        #df.show(10, truncate=False)
 
-#def start_streaming_context(spark:SparkSession) -> StreamingContext:
-#    """
-#    Ej4: Crea una conexión que permite recibir datos en streaming
-#    Ej5: Recoge TODOS los datos JSON recibidos y, por micro-lote:
-#         - los convierte en DataFrame,
-#         - añade la fecha (Date = timestamp de recepción),
-#         - añade el EUR/USD del momento,
-#         - y los muestra por consola.
-#    """
-#    # Creo el contexto de streaming y la frecuencia de batches
-#    sc = spark.sparkContext
-#    ssc = StreamingContext(sc, batchDuration=10)
-#
-#    # Conexión al socket
-#    lines = ssc.socketTextStream(STREAM_HOST, STREAM_PORT) # Por socket llega siempre texto
-#    
-#    def process_rdd(rdd):
-#        """
-#        Función que procesa cada RDD (micro-lote) recibido en streaming
-#        """
-#        if rdd.isEmpty():
-#            print("No se han recibido datos en este micro-lote.")
-#            return
-#        
-#        # Convierto el RDD (Colección distribuida de datos) en DataFrame
-#        df = spark.read.json(rdd, schema=_STREAM_SCHEMA)
-#
-#        # Obtengo el timestamp actual
-#        now = datetime.now()
-#        actual_date = now.strftime("%Y-%m-%d")
-#        actual_time = now.strftime("%H:%M:%S")
-#        weekday = now.weekday() + 1 # Lunes=1 ... Domingo=7
-#
-#        # Obtengo el timestamp completo
-#        eurusd = _get_eurusd()
-#
-#        # Limpio y añado las nuevas columnas
-#        df = (df.dropna(subset=["ticker", "price"])
-#              .withColumn("Date", F.lit(actual_date).cast("date"))
-#              .withColumn("Time", F.lit(actual_time).cast("string"))
-#              .withColumn("Weekday", F.lit(weekday).cast("int"))
-#              .withColumn("eurusd", F.lit(eurusd).cast("double"))
-#              .withColumn("Timestamp", F.current_timestamp()) #
-#        )
-#
-#        print(f"Batch recibido el {actual_date} a las {actual_time}")
-#        df.show(10, truncate=False)
-#
-#        # Ejercicio6
-#        #print(f"Cálculo de valores diarios por cada ticker")
-#        #df = compute_daily_open_high_low_close(df)
-#        #df.show(10, truncate=False)
-#
-#
-#    # Por cada RDD recibido, aplico la función de proceso
-#    lines.foreachRDD(process_rdd)
-#
-#    return ssc
+    print("\n")
+    # Por cada RDD recibido, aplico la función de proceso
+    lines.foreachRDD(process_rdd)
+
+    # Inicio el contexto de streaming
+    ssc.start()
+
+    # Bloqueo el hilo del proceso
+    ssc.awaitTermination()
+
+    # Si no recibo más lotes, pero sin parar la sesión de spakr
+    ssc.stop(stopSparkContext=False, stopGraceFully=True)
+
+    return ssc
+
+def get_dataframe(spark:SparkSession, ticker:str, path_espec:str=_PARQUET_STREAM_PATH) -> DataFrame:
+    """
+    Ej3: Devuelve el DataFrame de un ticker que se ha
+    obtenido en tiempo real
+    """
+    return read_ticker_from_parquet(spark, ticker, path_espec)
