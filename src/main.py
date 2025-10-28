@@ -12,11 +12,12 @@ def main():
 
     spark = SparkSessionSingleton.get_instance("IBEX35-Practice1")
     #btch_ctrl = BatchController(spark, TICKERS, START_DATE, END_DATE)
-    str_ctrl = StreamingController(spark)
+    #str_ctrl = StreamingController(spark)
 
     # Silenciar logs de spark
     spark.sparkContext.setLogLevel("FATAL")
 
+    # Procesamiento por lotes
     #output = btch_ctrl.exec_pipeline()
 
     #print("\nResultados del procesamiento por lotes")
@@ -32,16 +33,19 @@ def main():
     #print("\n")
     #print("\n")
     #show_opengap(TICKERS, output, 5)
-    print("\nResultados del procesamiento en streaming")
+    
+    #print("\nResultados del procesamiento en streaming")
     #str_ctrl.start_streaming()
 
     # Una vez recibidos los muestro
-    for ticker in TICKERS:
-        df_stream = str_ctrl.get_df_of_ticker_streaming(ticker)
-        show_head(df_stream, 15, f"Top 15 streaming {ticker}")
-        df_metrics = str_ctrl.compute_streaming_metrics(df_stream)
-        print()
-        show_head(df_metrics, 15, f"Top 15 streaming Open, High, Low, Volume {ticker}")
+    #for ticker in TICKERS:
+    #    df_stream = str_ctrl.get_df_of_ticker_streaming(ticker)
+    #    show_head(df_stream, 15, f"Top 15 streaming {ticker}")
+    #    df_metrics = str_ctrl.compute_streaming_metrics(df_stream)
+    #    print()
+    #    show_head(df_metrics, 15, f"Top 15 streaming Open, High, Low, Volume {ticker}")
+
+    print("---- Visualización de datos ----")
 
 if __name__ == "__main__":
     main()

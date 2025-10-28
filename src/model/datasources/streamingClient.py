@@ -50,8 +50,9 @@ def start_streaming_context(spark:SparkSession) -> StreamingContext:
         """
         Función que procesa cada RDD (micro-lote) recibido en streaming
         """
-        if rdd.isEmpty():
+        if rdd.isEmpty(): # Si no recibo más lotes, paro el streaming, pero no la sesión de spark
             print("No se han recibido datos en este micro-lote.")
+            ssc.stop(stopSparkContext=False, stopGraceFully=True)
             return
         
         # Convierto el RDD (Colección distribuida de datos) en DataFrame
@@ -83,11 +84,6 @@ def start_streaming_context(spark:SparkSession) -> StreamingContext:
             df_ticker = df.filter(F.col("ticker") == ticker_str)
             append_data_to_ticker(df_ticker, ticker_str, _PARQUET_STREAM_PATH)
 
-        # Ejercicio6
-        #print(f"Cálculo de valores diarios por cada ticker")
-        #df = compute_daily_open_high_low_close(df)
-        #df.show(10, truncate=False)
-
     print("\n")
     # Por cada RDD recibido, aplico la función de proceso
     lines.foreachRDD(process_rdd)
@@ -98,8 +94,8 @@ def start_streaming_context(spark:SparkSession) -> StreamingContext:
     # Bloqueo el hilo del proceso
     ssc.awaitTermination()
 
-    # Si no recibo más lotes, pero sin parar la sesión de spakr
-    ssc.stop(stopSparkContext=False, stopGraceFully=True)
+    # Si no recibo más lotes, pero sin parar la sesión de spark
+    #ssc.stop(stopSparkContext=False, stopGraceFully=True)
 
     return ssc
 
