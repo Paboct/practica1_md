@@ -5,6 +5,7 @@ from model.datasources.yfinanceClient import download_historic_data
 from model.logic.additioners import add_open_gap, add_weekday_column
 from model.logic.cleaners import clean_and_validate_ticker
 from model.persistence.parquet_store import append_data_to_ticker, delete_data_from_ticker, save_if_not_exists
+from view.console_view import show_schema, show_head, show_weekday, show_opengap, show_response_to_question_1, show_comments_to_question_1b
 from pyspark.sql import SparkSession, DataFrame
 
 class BatchController:
@@ -75,8 +76,42 @@ class BatchController:
         Añade la columna de open gap entre sesiones (%).
         """
         return add_open_gap(df)
+    
+    def _show_df_schema(self, df:DataFrame, title:str="Schema histórico limpio") -> None:
+        """
+        Muestra el esquema del DataFrame.
+        """
+        show_schema(df, title)
 
-    def exec_pipeline(self) -> Dict:
+    
+    def _show_head(self, df:DataFrame, n:int) -> None:
+        """
+        Muestra las primeras n filas del DataFrame.
+        """
+        show_head(df, n, title=f"Top {n} histórico {df.collect()[0]['Ticker']}")
+
+
+    def _show_weekday_or_open_gap(self, output: Dict, n:int, tp:str) -> None:
+        """
+        Muestra el día de la semana de los datos procesados.
+        tp: "weekday" o "opengap"
+        """
+        if tp == "opengap":
+            show_opengap(self.tickers, output, n)
+        else:
+            show_weekday(self.tickers, output, n)
+
+    
+    def _show_arguments(self) -> None:
+        """
+        Muestra los argumentos para la pregunta 1.
+        """
+        show_response_to_question_1()
+        print("\n")
+        show_comments_to_question_1b()
+
+
+    def exec_pipeline(self) -> None:
         """
         Ejecuta el flujo requerido en el ejercicio 4:
         - Descarga los datos históricos.
@@ -84,14 +119,7 @@ class BatchController:
         - Guarda los datos en formato Parquet (si no existen).
         - Añade la columna de día de la semana.
         - Añade la columna de open gap entre sesiones (%).
-        - Devolver DFs para mostrar
-
-        Returns:
-        {
-            "historic": DataFrame (limpio con todos los tickers),
-            "weeday": DataFrame (con columna weekday),
-            "opengap": DataFrame (con columna open gap)
-            }
+        - Mustra la información requerida en consola.
         """
         
         df_all = self._download_data()
@@ -111,8 +139,30 @@ class BatchController:
         # Luego añado los datos nuevos en la columna adicional
         #self._save_parquet(df_gap)
     
-        return {
+        output ={
             "historic": df_clean,
             "weekday": df_weekday,
             "opengap": df_gap
         }
+
+        # Muestro los argumentos para la pregunta 1
+        self._show_arguments()
+
+        # Mostramos el esquema del df limpio
+        self._show_df_schema(df_clean)
+        
+        print("\n")
+        
+        # Mostramos el histórico de cada ticker
+        for ticker in self.tickers:
+            self._show_head(df_clean.filter(F.col("Ticker") == ticker), 5)
+
+        # Mostramos el weekday de cada ticker
+        print("\n")
+        self._show_weekday_or_open_gap(output, 5, "weekday")
+        
+        print("\n")
+        print("\n")
+
+        # Mostramos el opengap de cada ticker
+        self._show_weekday_or_open_gap(output, 5, "opengap")

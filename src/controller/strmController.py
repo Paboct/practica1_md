@@ -4,6 +4,8 @@ from pyspark.streaming import StreamingContext
 from model.logic.additioners import compute_daily_open_high_low_close
 from model.datasources.streamingClient import start_streaming_context, get_dataframe
 from config.settings import STREAM_HOST, STREAM_PORT, _PARQUET_STREAM_PATH
+from view import *
+from typing import List
 
 class StreamingController:
     """
@@ -11,8 +13,9 @@ class StreamingController:
     Crea el contexto de streaming y ejecuta el pipeline.
     """
 
-    def __init__(self, spark_session:SparkSession) -> None:
+    def __init__(self, spark_session:SparkSession, tickers:List[str]) -> None:
         self.session = spark_session
+        self.tickers = tickers
 
     def start_streaming(self) -> None:
         """
@@ -33,3 +36,8 @@ class StreamingController:
         del ejercicio 6
         """
         return compute_daily_open_high_low_close(df)
+    
+    def show_info(self, ) -> None:
+        """
+        Muestra la información relevante del streaming
+        """

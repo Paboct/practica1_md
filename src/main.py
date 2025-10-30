@@ -1,5 +1,6 @@
 from controller.btchController import BatchController
 from controller.strmController import StreamingController
+from controller.pltController import PlottingController
 from model.sparkSession import SparkSessionSingleton
 from view.console_view import show_weekday, show_head, show_opengap, show_schema, show_comments_to_question_1b, show_response_to_question_1
 from config.settings import TICKERS, START_DATE, END_DATE
@@ -11,31 +12,19 @@ os.environ.setdefault("HADOOP_HOME", r"C:\hadoop")
 def main():
 
     spark = SparkSessionSingleton.get_instance("IBEX35-Practice1")
-    #btch_ctrl = BatchController(spark, TICKERS, START_DATE, END_DATE)
-    #str_ctrl = StreamingController(spark)
+    btch_ctrl = BatchController(spark, TICKERS, START_DATE, END_DATE)
+    str_ctrl = StreamingController(spark, TICKERS)
+    plt_ctrl = PlottingController(spark)
 
     # Silenciar logs de spark
     spark.sparkContext.setLogLevel("FATAL")
 
     # Procesamiento por lotes
-    #output = btch_ctrl.exec_pipeline()
-
-    #print("\nResultados del procesamiento por lotes")
-    #show_response_to_question_1()
-    #print("\n")
-    #show_comments_to_question_1b()
-    #show_schema(output["historic"], "Schema histórico limpio")
-    #for ticker in TICKERS:
-    #    show_head(output["historic"].filter(F.col("Ticker") == ticker), 5, f"Top 5 histórico {ticker}")
-    #
-    #print("\n")
-    #show_weekday(TICKERS, output, 5)
-    #print("\n")
-    #print("\n")
-    #show_opengap(TICKERS, output, 5)
+    print("\nResultados del procesamiento por lotes")
+    #btch_ctrl.exec_pipeline()
     
-    #print("\nResultados del procesamiento en streaming")
-    #str_ctrl.start_streaming()
+    print("\nResultados del procesamiento en streaming")
+    str_ctrl.start_streaming()
 
     # Una vez recibidos los muestro
     #for ticker in TICKERS:
@@ -44,8 +33,15 @@ def main():
     #    df_metrics = str_ctrl.compute_streaming_metrics(df_stream)
     #    print()
     #    show_head(df_metrics, 15, f"Top 15 streaming Open, High, Low, Volume {ticker}")
+    
+    #print("---- Visualización de datos ----")
+    ## pequeña comprobación
+    #ticker = TICKERS[0]
+    #df_ticker = plt_ctrl.get_data_for_ticker(ticker)
+    #show_head(df_ticker, 10, f"Top 10 datos del ticker {ticker}")
 
-    print("---- Visualización de datos ----")
+
+
 
 if __name__ == "__main__":
     main()
