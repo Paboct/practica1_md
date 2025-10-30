@@ -4,7 +4,7 @@ from pyspark.streaming import StreamingContext
 from model.logic.additioners import compute_daily_open_high_low_close
 from model.datasources.streamingClient import start_streaming_context, get_dataframe
 from config.settings import STREAM_HOST, STREAM_PORT, _PARQUET_STREAM_PATH
-from view import *
+from view.console_view import show_head
 from typing import List
 
 class StreamingController:
@@ -36,8 +36,18 @@ class StreamingController:
         del ejercicio 6
         """
         return compute_daily_open_high_low_close(df)
-    
-    def show_info(self, ) -> None:
+
+    def _show_head(self, df:DataFrame, n:int, title:str) -> None:
+        """Muestra el head del dataframe"""
+        show_head(df, n, title)
+
+    def show_info(self) -> None:
         """
         Muestra la información relevante del streaming
+        de cada uno de los tickers
         """
+        for ticker in self.tickers:
+            df = self.get_df_of_ticker_streaming(ticker)
+            self._show_head(df, 15, f"Top {15} streaming {ticker}")
+            df_open_high_low_close = self.compute_streaming_metrics(df)
+            self._show_head(df_open_high_low_close, 15, f"Top {15} streaming {ticker}")
