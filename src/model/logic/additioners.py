@@ -10,6 +10,23 @@ def add_weekday_column(df: DataFrame) -> DataFrame:
     """
     return df.withColumn("Weekday", F.dayofweek(F.col("Date")))
 
+
+def add_season_column(df: DataFrame, season:str="summer") -> DataFrame:
+    """
+    Añade una columna que me dice la estación (Invierno, Primavera, Verano, Otoño)
+    de cuando se registró la sesión.
+    """
+    if season not in ["winter", "spring", "summer", "autumn"]:
+        raise ValueError("Estación no válida. Use 'winter', 'spring', 'summer' o 'autumn'.")
+    
+    df = df.withColumn("Month", F.month(F.col("Date")))
+
+    return df.withColumn("Season",
+                         F.when((F.col("Month") == 12)| (F.col("Month") <= 2), "winter")
+                          .when(F.col("Month").between(3, 5), "spring")
+                          .when(F.col("Month").between(6, 8), "summer")
+                          .when(F.col("Month").between(9, 11), "autumn"))
+
 def add_open_gap(df: DataFrame) -> DataFrame:
     """
     Ej3: Añade el open gap entre sesiones (%): ((Close del día anterior / Open de hoy) - 1) * 100

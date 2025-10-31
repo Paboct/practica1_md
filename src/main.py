@@ -29,14 +29,15 @@ def main():
     # Una vez recibidos los muestro
     #str_ctrl.show_info()
     
-    #print("---- Visualización de datos ----")
-    ## pequeña comprobación
-    #ticker = TICKERS[0]
-    #df_ticker = plt_ctrl.get_data_for_ticker(ticker)
-    #show_head(df_ticker, 10, f"Top 10 datos del ticker {ticker}")
+    print("---- Visualización de datos ----")
 
+    # Ej 7a
+    #plt_ctrl.plotting_close_gap(TICKERS[0], "boxplot")
+    #plt_ctrl.plotting_close_gap(TICKERS[0], "violin")
 
-
+    # Ej 7b
+    plt_ctrl.plotting_seasonal_effect(TICKERS[0], "boxplot", 6, 8)
+    plt_ctrl.plotting_seasonal_effect(TICKERS[0], "violin", 6, 8)
 
 if __name__ == "__main__":
     main()
