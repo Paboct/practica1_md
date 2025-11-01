@@ -28,3 +28,29 @@ def compute_close_gap(df: DataFrame) -> DataFrame:
 
     return df_prev.withColumn("CloseGap", ((F.col("Close") - F.col("Prev_Close")) / F.col("Prev_Close")) * 100)\
                     .drop("Prev_Close")
+
+
+def compute_medium(df: DataFrame, n_rows:int=5) -> DataFrame:
+    """
+    Recibe un dataframe de PySpark con las columnas
+    'Timestamp', 'price', 'volume', 'high', 'low', 'Date', 'Time', ...
+    Devuelve un DataFrame ordenado por 'Timestamp' y con una nueva columna
+    con la media móvil del precio (price) de las últimas n_rows filas (incluida la actual).
+    """
+    w = Window.orderBy(F.col("Timestamp").asc())
+    return df.withColumn(f"RollingMean_{n_rows}", F.avg(F.col("price")).over(w.rowsBetween(-(n_rows-1), 0)))
+    
+
+def compute_perc_variation(df: DataFrame) -> DataFrame:
+    """
+    Recibe un DataFrame de PySpark con las columnas 'Timestamp', 'price', 'volume', 'high', 'low', 'Date', 'Time', ...
+    Devuelve un DataFrame con una nueva columna que contiene la variación porcentual del precio(price)
+    respecto al precio de la fila anterior (ordenado por Timestamp).
+    """
+
+    w = Window.orderBy(F.col("Timestamp").asc())
+    prev_price = df.withColumn("Prev_Price", F.lag(F.col("price")).over(w))
+
+    return prev_price.withColumn("Perc_Variation",
+                                 ((F.col("price") - F.col("Prev_Price")) / F.col("Prev_Price")) * 100)\
+                    .drop("Prev_Price")

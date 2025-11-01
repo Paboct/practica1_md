@@ -14,7 +14,7 @@ def main():
     spark = SparkSessionSingleton.get_instance("IBEX35-Practice1")
     btch_ctrl = BatchController(spark, TICKERS, START_DATE, END_DATE)
     str_ctrl = StreamingController(spark, TICKERS)
-    plt_ctrl = PlottingController(spark)
+    plt_ctrl = PlottingController(spark, str_ctrl)
 
     # Silenciar logs de spark
     spark.sparkContext.setLogLevel("FATAL")
@@ -29,15 +29,33 @@ def main():
     # Una vez recibidos los muestro
     #str_ctrl.show_info()
     
+    
     print("---- Visualización de datos ----")
 
-    # Ej 7a
+    # Efecto viernes sobre el retorno diario (%)
     #plt_ctrl.plotting_close_gap(TICKERS[0], "boxplot")
     #plt_ctrl.plotting_close_gap(TICKERS[0], "violin")
+    #plt_ctrl.plotting_close_gap(TICKERS[0], "hist") # Añadir y poner en el informe que el límite es [-5, 5] con xlim como kwargs
 
-    # Ej 7b
-    plt_ctrl.plotting_seasonal_effect(TICKERS[0], "boxplot", 6, 8)
-    plt_ctrl.plotting_seasonal_effect(TICKERS[0], "violin", 6, 8)
+    # Efecto estacional sobre el retorno diario (%)
+    #plt_ctrl.plotting_seasonal_effect(TICKERS[0], "boxplot", "summer")
+    #plt_ctrl.plotting_seasonal_effect(TICKERS[0], "violin", "summer")
+    #plt_ctrl.plotting_seasonal_effect(TICKERS[0], "hist", "summer")
+
+    # Relación precio volumen
+    #plt_ctrl.plotting_numerics_features_corr(TICKERS[0], "Close", "Volume", "scatter")
+    #plt_ctrl.plotting_numerics_features_corr(TICKERS[0], "Close", "Volume", "jointplot")
+
+    # Gráfico datos recibidos en streaming
+    #plt_ctrl.plotting_streaming_data(TICKERS[0], "line")
+    #plt_ctrl.plotting_streaming_data(TICKERS[0], "scatter")
+    #plt_ctrl.plotting_streaming_data(TICKERS[0], "kde")
+
+    # Comportamiento del gap de apertura
+    plt_ctrl.plotting_gap_behaviour(TICKERS[0])
+
+    # Cerrar la sesión de Spark
+    #spark.stop()
 
 if __name__ == "__main__":
     main()

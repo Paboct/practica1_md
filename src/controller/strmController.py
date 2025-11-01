@@ -3,6 +3,7 @@ from pyspark.sql import DataFrame
 from pyspark.streaming import StreamingContext
 from model.logic.additioners import compute_daily_open_high_low_close
 from model.datasources.streamingClient import start_streaming_context, get_dataframe
+from model.logic.auxiliars import compute_perc_variation, compute_medium
 from config.settings import STREAM_HOST, STREAM_PORT, _PARQUET_STREAM_PATH
 from view.console_view import show_head
 from typing import List
@@ -33,9 +34,21 @@ class StreamingController:
     def compute_streaming_metrics(self, df:DataFrame) -> DataFrame:
         """
         Devuelve el dataframe, una vez aplicados los cambios
-        del ejercicio 6
+        del ejercicio 6.
         """
-        return compute_daily_open_high_low_close(df)
+        df = compute_daily_open_high_low_close(df)
+        return df
+
+    def compute_additional_metrics(self, df:DataFrame, n_rows:int) -> DataFrame:
+        """
+        Añade las métricas adicionales para visualización.
+        - Variación porcentual del precio respecto al anterior
+        - Media móvil del precio de las últimas 5 filas
+        """
+        df = compute_perc_variation(df)
+        df = compute_medium(df, n_rows=n_rows)
+        return df
+    
 
     def _show_head(self, df:DataFrame, n:int, title:str) -> None:
         """Muestra el head del dataframe"""

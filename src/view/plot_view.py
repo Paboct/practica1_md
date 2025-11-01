@@ -1,4 +1,6 @@
 from matplotlib.figure import Figure
+from config.settings import _GRAPHS_PATH
+import os
 import matplotlib.pyplot as plt
 
 class PlotView:
@@ -19,18 +21,25 @@ class PlotView:
         else:
             print("No hay figura para mostrar.")
 
-    def save(self, fig: Figure, path: str, dpi: int = 300) -> None:
+    def save(self, fig: Figure, ticker: str, filename: str, dpi: int = 300) -> None:
         """
         Guarda el gráfico en un archivo.
 
         Parámetros:
         - fig: matplotlib.figure.Figure
-        - path: str : ruta completa del archivo (incluye .png, .pdf, etc.)
-        - dpi: int : resolución en puntos por pulgada (por defecto 300)
+        - ticker: str : Ticker asociado al gráfico (para organizar carpetas)
+        - filename: str : Nombre del archivo donde se guardará el gráfico
+        - dpi: int : Resolución del gráfico guardado (por defecto 300)
         """
-        if fig is not None:
-            fig.savefig(path, dpi=dpi, bbox_inches="tight")
-            print(f"Gráfico guardado correctamente en: {path}")
-        
-        else:
+        if not fig:
             print("No hay figura para guardar.")
+            return
+    
+        _ticker = _ticker.replace(".MC", "").lower()
+
+        ticker_path = os.path.join(_GRAPHS_PATH, _ticker)
+        os.makedirs(ticker_path, exist_ok=True)
+
+        file_path = os.path.join(ticker_path, filename)
+        fig.savefig(file_path, dpi=dpi)
+        print(f"Gráfico guardado en {file_path}.")

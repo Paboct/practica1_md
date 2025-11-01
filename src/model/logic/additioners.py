@@ -5,20 +5,17 @@ from pyspark.sql import Window
 def add_weekday_column(df: DataFrame) -> DataFrame:
     """
     Ej2: Añade una columna que me dice el día de la semana, de
-    cuando se registró la sesión (1=Monday, 7=Sunday) cuyo tipo es Integer.
+    cuando se registró la sesión (1=Sunday, 2=Monday, ..., 7=Saturday) cuyo tipo es Integer.
     La columna de Date tiene formato yyyy-MM-dd
     """
     return df.withColumn("Weekday", F.dayofweek(F.col("Date")))
 
 
-def add_season_column(df: DataFrame, season:str="summer") -> DataFrame:
+def add_season_column(df: DataFrame) -> DataFrame:
     """
     Añade una columna que me dice la estación (Invierno, Primavera, Verano, Otoño)
     de cuando se registró la sesión.
     """
-    if season not in ["winter", "spring", "summer", "autumn"]:
-        raise ValueError("Estación no válida. Use 'winter', 'spring', 'summer' o 'autumn'.")
-    
     df = df.withColumn("Month", F.month(F.col("Date")))
 
     return df.withColumn("Season",
@@ -64,3 +61,35 @@ def compute_daily_open_high_low_close(df: DataFrame) -> DataFrame:
                    F.sum("volume").cast("long").alias("volume")).orderBy("ticker", "day")
 
     return result
+
+
+def add_gap_behaviour(df: DataFrame) -> DataFrame:
+    """
+    Añade al DataFrame:
+     - IntraDayReturn: % de cambio de la apertura y el cierre del mismo día
+      - GapBehaviour: 'Reversión" o 'Continuación' según si el gap se corrige o es constante.
+      
+      Requiere columnas:
+       - ticker
+       - Date
+       - Open
+       - Close
+       - OpenGap
+    """
+    w = Window.partitionBy("ticker").orderBy(F.col("Date").asc())
+
+    # % cambio intradía
+    df = df.withColumn("IntraDayReturn", ((F.col("Close") - F.col("Open")) / F.col("Open")) * 100)
+
+    # Califico el comportamiento del gap
+    # Reversión -> el gap se corrige: OpenGap y IntraDayReturn tienen signos opuestos
+    # Continuación -> el gap se mantiene: OpenGap e IntraDayReturn tienen el mismo signo
+    df = df.withColumn("GapBehaviour",
+        F.when((F.col("OpenGap") > 0) & (F.col("IntraDayReturn") > 0), "Continuación").when(
+            (F.col("OpenGap") < 0) & (F.col("IntraDayReturn") < 0), "Continuación").
+            when((F.col("OpenGap") > 0) & (F.col("IntraDayReturn") < 0), "Reversión").
+            when((F.col("OpenGap") < 0) & (F.col("IntraDayReturn") > 0), "Reversión").
+            otherwise(None)
+    )
+    
+    return df
