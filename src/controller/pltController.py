@@ -82,7 +82,6 @@ class PlottingController:
         """
         for ticker in tickers:
             df = self._friday_effect_df(ticker)
-            df.show(5)
             df = df.dropna() # Eliminamos filas con valores nulos (Gap del primer dia)
 
             # Creo el gráfico invocando la factoría
@@ -101,12 +100,11 @@ class PlottingController:
 
             # Guardar gráfico
             plot_view.save(fig, ticker, f"friday_effect_{plot_type}.png")
-            df.show(5)
 
 
-    def plotting_seasonal_effect(self, ticker:str, plot_type:str, season:str) -> None:
+    def plotting_seasonal_effect(self, tickers:list, plot_type:str, season:str) -> None:
         """
-        Ejecuta la pipeline de visualización para un ticker y tipo de gráfico dado,
+        Ejecuta la pipeline de visualización para una lista de tickers y tipo de gráfico dado,
         filtrando por estación para analizar el efecto estacionalidad.
         Parámetros:
         - season: str : estación del año (winter, spring, summer, autumn)
@@ -121,52 +119,57 @@ class PlottingController:
         Returns:
             None
         """
-        df = self._seasonal_effect_df(ticker, season)
-        df = df.dropna() # Eliminamos filas con valores nulos (Gap del primer dia)
+        for ticker in tickers:
+            df = self._seasonal_effect_df(ticker, season)
+            df = df.dropna() # Eliminamos filas con valores nulos (Gap del primer dia)
 
-        # Creo el gráfico invocando la factoría
-        plot_factory = PlottingFactory()
-        fig = plot_factory.build_plot(plot_type, df,
-                                        x="is_in_season",
-                                        y="CloseGap",
-                                        title=self._build_title(ticker, plot_type, season),
-                                        x_label="Pertenencia a estación",
-                                        y_label="Retorno diario (%)")
-        
-        # Mostrar el gráfico
-        plot_view = PlotView()
-        plot_view.show(fig)
+            # Creo el gráfico invocando la factoría
+            plot_factory = PlottingFactory()
+            fig = plot_factory.build_plot(plot_type, df,
+                                            x="is_in_season",
+                                            y="CloseGap",
+                                            title=self._build_title(ticker, plot_type, season),
+                                            x_label="Pertenencia a estación",
+                                            y_label="Retorno diario (%)")
 
-        # Guardar gráfico
-        plot_view.save(fig, ticker, f"{season}_seasonal_effect_{plot_type}.png")
+            # Mostrar el gráfico
+            plot_view = PlotView()
+            #plot_view.show(fig)
+
+            # Guardar gráfico
+            plot_view.save(fig, ticker, f"{season}_seasonal_effect_{plot_type}.png")
 
     
-    def plotting_numerics_features_corr(self, ticker:str, var1:str, var2:str, tpe:str='scatter') -> None:
+    def plotting_numerics_features_corr(self, tickers:list, var1:str, var2:str, tpe:str='scatter') -> None:
         """
         Ejecuta la pipeline de visualización para un ticker y un gráfico de dispersión.
         Parámetros:
-        - ticker: str : ticker a analizar
+        - ticker: list: str : ticker a analizar
         - var1: str : nombre de la primera variable a comparar (La variable debe ser numérica)
         - var2: str : nombre de la segunda variable a comparar (La variable debe ser numérica)
         - tpe: str : tipo de gráfico (por defecto scatter) [scatter, jointplot]
         Returns:
             None
         """
-        df = self._get_data_for_ticker(ticker)
-        df = df.dropna(subset=[var1, var2]) # Eliminamos filas con valores nulos en las variables
+        for ticker in tickers:
+            df = self._get_data_for_ticker(ticker)
+            df = df.dropna(subset=[var1, var2]) # Eliminamos filas con valores nulos en las variables
 
-        # Creo el gráfico invocando la factoría
-        plot_factory = PlottingFactory()
-        fig = plot_factory.build_plot(tpe, df,
-                                      x=var1,
-                                      y=var2,
-                                      title=f"Gráfico de Dispersión: {var1} vs {var2} — {ticker}",
-                                      x_label=var1,
-                                      y_label=var2)
-        
-        # Mostrar el gráfico
-        plot_view = PlotView()
-        plot_view.show(fig)
+            # Creo el gráfico invocando la factoría
+            plot_factory = PlottingFactory()
+            fig = plot_factory.build_plot(tpe, df,
+                                          x=var1,
+                                          y=var2,
+                                          title=f"Gráfico de Dispersión: {var1} vs {var2} — {ticker}",
+                                          x_label=var1,
+                                          y_label=var2)
+
+            # Mostrar el gráfico
+            plot_view = PlotView()
+            plot_view.show(fig)
+
+            # Guardar gráfico
+            plot_view.save(fig, ticker, f"{var1}_vs_{var2}_{tpe}.png")
 
 
     def plotting_streaming_data(self, ticker:str, tpe:str="line") -> None:
@@ -216,36 +219,39 @@ class PlottingController:
         plot_view.show(fig)
 
     
-    def plotting_gap_behaviour(self, ticker:str) -> None:
+    def plotting_gap_behaviour(self, tickers:list) -> None:
         """
-        Ejecuta la pipeline de visualización para un ticker y tipo de gráfico dado,
-        mostrando el comportamiento del gap.
+        Ejecuta la pipeline de visualización para una lista de tickers y el comportamiento del gap de apertura.
         Parámetros:
         - ticker: str : ticker a analizar
 
         Returns:
             None
         """
-        df = self._get_data_for_ticker(ticker)
+        for ticker in tickers:
+            df = self._get_data_for_ticker(ticker)
 
-        # Modificamos el DataFrame para añadir la columna categórica
-        df = add_gap_behaviour(df)
+            # Modificamos el DataFrame para añadir la columna categórica
+            df = add_gap_behaviour(df)
 
-        df = df.select("OpenGap", "GapBehaviour", "IntraDayReturn").dropna()
+            df = df.select("OpenGap", "GapBehaviour", "IntraDayReturn").dropna()
 
-        # Creo el gráfico invocando la factoría
-        plot_factory = PlottingFactory()
-        fig = plot_factory.build_plot("scatter", df,
-                                      x="OpenGap",
-                                      y ="IntraDayReturn",
-                                      hue="GapBehaviour",
-                                      title=f"{ticker} - Retorno intradía vs Gap de apertura",
-                                      x_label="Open Gap (%)",
-                                      y_label="Retorno intradía (%)",
-                                      palette={"Reversión": "green", "Continuación": "orange"},
-                                      figsize=(10, 8))
+            # Creo el gráfico invocando la factoría
+            plot_factory = PlottingFactory()
+            fig = plot_factory.build_plot("scatter", df,
+                                          x="OpenGap",
+                                          y ="IntraDayReturn",
+                                          hue="GapBehaviour",
+                                          title=f"{ticker} - Retorno intradía vs Gap de apertura",
+                                          x_label="Open Gap (%)",
+                                          y_label="Retorno intradía (%)",
+                                          palette={"Reversión": "green", "Continuación": "orange"},
+                                          figsize=(10, 8))
 
-        
-        # Mostrar el gráfico
-        plot_view = PlotView()
-        plot_view.show(fig)
+
+            # Mostrar el gráfico
+            plot_view = PlotView()
+            plot_view.show(fig)
+
+            # Guardar gráfico
+            plot_view.save(fig, ticker, f"gap_behaviour_scatter.png")

@@ -183,17 +183,40 @@ class PlottingFactory:
         y_label = kwargs.get("y_label", y)
         kind = kwargs.get("kind", "scatter")  # scatter, reg, resid, kde, hex
         height = kwargs.get("height", 8)
+        color = kwargs.get("color", "#2A9D8F")
 
         sns.set_theme(style="darkgrid")
+        plt.rcParams["axes.edgecolor"] = "0.8"
+        plt.rcParams["axes.linewidth"] = 0.8
 
         # Gráfico conjunto
-        fig = sns.jointplot(data=df, x=x, y=y, kind=kind, height=height, space=0, color="C0", alpha=0.6)
+        fig = sns.jointplot(data=df, x=x, y=y, kind=kind, height=height, space=0, color=color, alpha=0.6,
+                            marginal_kws=dict(bins=25, fill=True, alpha=0.7), edgecolor="0.2")
+
 
         # Correlación de Pearson
         corr = df[x].corr(df[y])
-        fig.figure.suptitle(title + f'\nCorr Pearson: {corr:.2f}', fontsize=16)
-        fig.set_axis_labels(x_label, y_label)
-        fig.figure.tight_layout()
+
+        # Título principal
+        fig.figure.suptitle(title, fontsize=16, weight="bold", y=1.02)
+
+        # Etiquetas
+        fig.set_axis_labels(x_label, y_label, fontsize=13)
+
+        ax = fig.ax_joint
+        ax.text(
+            0.05, 0.95,
+            f"Corr Pearson: {corr:.2f}",
+            transform=ax.transAxes,
+            fontsize=12,
+            weight="bold",
+            color="black",
+            bbox=dict(facecolor="white", alpha=0.7, edgecolor="0.7", boxstyle="round,pad=0.3")
+        )
+
+        ax.grid(alpha=0.25, linestyle="--")
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.92)
 
         return fig.figure
 
