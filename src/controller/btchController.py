@@ -49,12 +49,11 @@ class BatchController:
         self._df_clean = clean_and_validate_ticker(df)
         return self._df_clean
 
-    def _save_parquet(self, df:DataFrame) -> None:
+    def _save_parquet(self, df:DataFrame, ticker:str) -> None:
         """
         Guarda los datos en formato Parquet, si no existen ya.
         """
-        for ticker in self.tickers:
-            save_if_not_exists(df, ticker)
+        save_if_not_exists(df, ticker)
 
     def _delete_parquet(self, tickers:List[str]) -> None:
         """
@@ -166,3 +165,8 @@ class BatchController:
 
         # Mostramos el opengap de cada ticker
         self._show_weekday_or_open_gap(output, 5, "opengap")
+
+        # Guardo los datos finales con las nuevas columnas añadidas
+        for ticker in self.tickers:
+            df_ticker = df_gap.filter(F.col("Ticker") == ticker)
+            self._save_parquet(df_ticker, ticker)

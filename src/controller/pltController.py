@@ -76,26 +76,33 @@ class PlottingController:
 
         return df.select("CloseGap", "is_in_season")
 
-    def plotting_close_gap(self, ticker:str, plot_type:str) -> None:
+    def plotting_close_gap(self, tickers:list, plot_type:str) -> None:
         """
-        Ejecuta la pipeline de visualización para un ticker y tipo de gráfico dado.
+        Ejecuta la pipeline de visualización para una lista de tickers y tipo de gráfico dado,
         """
-        df = self._friday_effect_df(ticker)
-        df = df.dropna() # Eliminamos filas con valores nulos (Gap del primer dia)
+        for ticker in tickers:
+            df = self._friday_effect_df(ticker)
+            df.show(5)
+            df = df.dropna() # Eliminamos filas con valores nulos (Gap del primer dia)
 
-        # Creo el gráfico invocando la factoría
-        plot_factory = PlottingFactory()
-        fig = plot_factory.build_plot(plot_type, df,
-                                      x="is_friday",
-                                      y="CloseGap",
-                                      bins=30,
-                                      title=self._build_title(ticker, plot_type, "Friday"),
-                                      x_label="Día de la semana",
-                                      y_label="Retorno diario (%)")
-        
-        # Mostrar el gráfico
-        plot_view = PlotView()
-        plot_view.show(fig)
+            # Creo el gráfico invocando la factoría
+            plot_factory = PlottingFactory()
+            fig = plot_factory.build_plot(plot_type, df,
+                                          x="is_friday",
+                                          y="CloseGap",
+                                          bins=30,
+                                          title=self._build_title(ticker, plot_type, "Friday"),
+                                          x_label="Día de la semana",
+                                          y_label="Retorno diario (%)")
+
+            # Mostrar el gráfico
+            plot_view = PlotView()
+            plot_view.show(fig)
+
+            # Guardar gráfico
+            plot_view.save(fig, ticker, f"friday_effect_{plot_type}.png")
+            df.show(5)
+
 
     def plotting_seasonal_effect(self, ticker:str, plot_type:str, season:str) -> None:
         """
@@ -129,6 +136,9 @@ class PlottingController:
         # Mostrar el gráfico
         plot_view = PlotView()
         plot_view.show(fig)
+
+        # Guardar gráfico
+        plot_view.save(fig, ticker, f"{season}_seasonal_effect_{plot_type}.png")
 
     
     def plotting_numerics_features_corr(self, ticker:str, var1:str, var2:str, tpe:str='scatter') -> None:

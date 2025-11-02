@@ -66,10 +66,11 @@ def read_ticker_from_parquet(spark:SparkSession, ticker:str, path_espec:str=_PAR
     Lee un parquet de un ticker específico y devuelve el DataFrame correspondiente.
     """
     path = _get_parquet_path(ticker, path_espec)
+    print(f"Leyendo datos del ticker {ticker} desde la ruta {path}...")
 
     # Compruebo que existen los datos del ticker
     if not _check_ticker_existance(path):
         raise FileNotFoundError(f"No existen datos del ticker {ticker} en la ruta {path}.")
 
-    df = spark.read.parquet(path, index=False)
+    df = spark.read.parquet(path)
     return df

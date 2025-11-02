@@ -225,13 +225,15 @@ class PlottingFactory:
         # Figura
         fig, ax = plt.subplots(figsize=figsize)
 
-        # hacemos el histograma para cada categoría
+        # hacemos el histograma para cada categoría y añadimos una etiqueta de la media de cada distribución
         for cat in df[categories].unique():
             subset = df[df[categories] == cat]
-            sns.histplot(subset[values], bins=bins, kde=True, label=str(cat), ax=ax, 
-                         stat="density", element="step", fill=False)
+            sns.histplot(subset[values], bins=bins, kde=True, label=str(cat), ax=ax,
+                         stat="density", element="step", fill=True, alpha=0.2)
             # density para normalizar (ya que estás comparando un día frente a 6), element me define el estilo
             # kde sirve para añadir la curva de densidad
+            mean_val = subset[values].mean()
+            ax.axvline(mean_val, linestyle='--', label=f'Media {cat}: {mean_val:.2f}', color='C'+str(list(df[categories].unique()).index(cat)))
             
         ax.axvline(0, color='red', linestyle='--') # Línea en 0 como referencia
         ax.set_title(title)
@@ -265,7 +267,7 @@ class PlottingFactory:
 
         sns.set_theme(style="whitegrid")
         fig, ax = plt.subplots(figsize=figsize)
-        sns.violinplot(data=df, x=x, y=y, ax=ax, palette=palette)
+        sns.violinplot(data=df, x=x, y=y, ax=ax, palette=palette, alpha=0.4, inner="quartile", linewidth=1.2)
 
         ax.axhline(0, color='red', linestyle='--') # Línea en 0 como referencia
         ax.set_title(title)
@@ -300,10 +302,11 @@ class PlottingFactory:
 
         sns.set_theme(style="whitegrid")
         fig, ax = plt.subplots(figsize=figsize)
-        sns.boxplot(data=df, x=x, y=y, ax=ax, hue=x, palette=palette, legend=False)
+        sns.boxplot(data=df, x=x, y=y, ax=ax, hue=x, palette=palette, legend=False,
+                    meanprops={"marker":"o", "markerfacecolor":"white", "markeredgecolor":"black"})
         # Opcional: mostrar puntos individuales
         if show_points:
-            sns.stripplot(data=df, x=x, y=y, color='black', alpha=0.4, ax=ax, size=3)
+            sns.stripplot(data=df, x=x, y=y, color='black', alpha=0.4, ax=ax, size=2)
 
         ax.axhline(0, color='red', linestyle='--') # Línea en 0 como referencia
         ax.set_title(title)

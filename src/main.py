@@ -24,7 +24,7 @@ def main():
     #btch_ctrl.exec_pipeline()
     
     print("\nResultados del procesamiento en streaming")
-    #str_ctrl.start_streaming()
+    str_ctrl.start_streaming()
 
     # Una vez recibidos los muestro
     #str_ctrl.show_info()
@@ -33,14 +33,17 @@ def main():
     print("---- Visualización de datos ----")
 
     # Efecto viernes sobre el retorno diario (%)
-    #plt_ctrl.plotting_close_gap(TICKERS[0], "boxplot")
-    #plt_ctrl.plotting_close_gap(TICKERS[0], "violin")
-    #plt_ctrl.plotting_close_gap(TICKERS[0], "hist") # Añadir y poner en el informe que el límite es [-5, 5] con xlim como kwargs
+    # Mostramos 2 dataframes de dos tickers diferentes para comparar
+    #plt_ctrl._get_data_for_ticker(TICKERS[0]).show(5)
+    #plt_ctrl._get_data_for_ticker(TICKERS[1]).show(5)
+     #plt_ctrl.plotting_close_gap(TICKERS, "boxplot")
+    #plt_ctrl.plotting_close_gap(TICKERS, "violin")
+    #plt_ctrl.plotting_close_gap(TICKERS, "hist")
 
     # Efecto estacional sobre el retorno diario (%)
-    #plt_ctrl.plotting_seasonal_effect(TICKERS[0], "boxplot", "summer")
-    #plt_ctrl.plotting_seasonal_effect(TICKERS[0], "violin", "summer")
-    #plt_ctrl.plotting_seasonal_effect(TICKERS[0], "hist", "summer")
+    #plt_ctrl.plotting_seasonal_effect(TICKERS, "boxplot", "summer")
+    #plt_ctrl.plotting_seasonal_effect(TICKERS, "violin", "summer")
+    #plt_ctrl.plotting_seasonal_effect(TICKERS, "hist", "summer")
 
     # Relación precio volumen
     #plt_ctrl.plotting_numerics_features_corr(TICKERS[0], "Close", "Volume", "scatter")
@@ -52,7 +55,7 @@ def main():
     #plt_ctrl.plotting_streaming_data(TICKERS[0], "kde")
 
     # Comportamiento del gap de apertura
-    plt_ctrl.plotting_gap_behaviour(TICKERS[0])
+    #plt_ctrl.plotting_gap_behaviour(TICKERS[0])
 
     # Cerrar la sesión de Spark
     #spark.stop()

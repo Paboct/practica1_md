@@ -35,7 +35,7 @@ class PlotView:
             print("No hay figura para guardar.")
             return
     
-        _ticker = _ticker.replace(".MC", "").lower()
+        _ticker = ticker.replace(".MC", "").lower()
 
         ticker_path = os.path.join(_GRAPHS_PATH, _ticker)
         os.makedirs(ticker_path, exist_ok=True)
