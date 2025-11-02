@@ -24,7 +24,7 @@ def main():
     #btch_ctrl.exec_pipeline()
     
     print("\nResultados del procesamiento en streaming")
-    str_ctrl.start_streaming()
+    #str_ctrl.start_streaming()
 
     # Una vez recibidos los muestro
     #str_ctrl.show_info()
