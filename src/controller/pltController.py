@@ -172,7 +172,7 @@ class PlottingController:
             plot_view.save(fig, ticker, f"{var1}_vs_{var2}_{tpe}.png")
 
 
-    def plotting_streaming_data(self, ticker:str, tpe:str="line") -> None:
+    def plotting_streaming_data(self, tickers:list, tpe:str="line") -> None:
         """
         Ejecuta la pipeline de visualización para los datos recibidos en streaming,
         agregando previamente una serie de transformaciones.
@@ -181,42 +181,46 @@ class PlottingController:
         Returns:
             None
         """
-        # Datos originales en streaming
-        df = self.streamingController.get_df_of_ticker_streaming(ticker)
-        
-        # Agregación de las métricas adicionales
-        n_rows = 5
-        df = self.streamingController.compute_additional_metrics(df, n_rows=n_rows)
+        for ticker in tickers:
+            # Datos originales en streaming
+            df = self.streamingController.get_df_of_ticker_streaming(ticker)
 
-        # Ordenamos por Timestamp
-        df = df.orderBy(F.col("Timestamp").asc())
+            # Agregación de las métricas adicionales
+            n_rows = 5
+            df = self.streamingController.compute_additional_metrics(df, n_rows=n_rows)
 
-        # Creo el gráfico invocando la factoría
-        plot_factory = PlottingFactory()
-        if tpe == "line":
-            fig = plot_factory.build_plot(tpe, df,
-                                          title=f"Evolución intradía en tiempo real — {ticker}")
-        
-        elif tpe == "scatter":
-            fig = plot_factory.build_plot("scatter", df, 
-                                          x="price", 
-                                          y="volume",
-                                          hue="Perc_Variation",
-                                          title=f"{ticker} — Relación Precio–Volumen (streaming)",
-                                          x_label="Precio (€)",
-                                          y_label="Volumen",
-                                          palette="coolwarm")
-            
-        elif tpe == "kde":
-            fig = plot_factory.build_plot("kde", df,
-                                            x="Perc_Variation",
-                                            title=f"{ticker} — Distribución de la variación porcentual (streaming)",
-                                            x_label="Variación porcentual (%)",
-                                            y_label="Densidad")
+            # Ordenamos por Timestamp
+            df = df.orderBy(F.col("Timestamp").asc())
 
-        # Mostrar el gráfico
-        plot_view = PlotView()
-        plot_view.show(fig)
+            # Creo el gráfico invocando la factoría
+            plot_factory = PlottingFactory()
+            if tpe == "line":
+                fig = plot_factory.build_plot(tpe, df,
+                                              title=f"Evolución intradía en tiempo real — {ticker}")
+
+            elif tpe == "scatter":
+                fig = plot_factory.build_plot("scatter", df, 
+                                              x="price", 
+                                              y="volume",
+                                              hue="Perc_Variation",
+                                              title=f"{ticker} — Relación Precio–Volumen (streaming)",
+                                              x_label="Precio (€)",
+                                              y_label="Volumen",
+                                              palette="coolwarm")
+
+            elif tpe == "kde":
+                fig = plot_factory.build_plot("kde", df,
+                                                x="Perc_Variation",
+                                                title=f"{ticker} — Distribución de la variación porcentual (streaming)",
+                                                x_label="Variación porcentual (%)",
+                                                y_label="Densidad")
+
+            # Mostrar el gráfico
+            plot_view = PlotView()
+            plot_view.show(fig)
+
+            # Guardar gráfico
+            plot_view.save(fig, ticker, f"streaming_data_{tpe}.png")
 
     
     def plotting_gap_behaviour(self, tickers:list) -> None:

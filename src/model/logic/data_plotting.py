@@ -53,28 +53,85 @@ class PlottingFactory:
         - Variación porcentual tick a tick (Perc_Variation) en eje secundario.
         """
 
+        title = kwargs.get("title", "Evolución intradía en tiempo real")
+
         sns.set_theme(style="whitegrid")
-        fig, ax1 = plt.subplots(figsize=(12, 6))
+        fig, ax_price = plt.subplots(figsize=(12, 6))
 
-        # Eje del precio y media móvil
-        sns.lineplot(x="Timestamp", y="price", data=df, ax=ax1, label="Precio", color="blue", linewidth=1.5)
-        sns.lineplot(x="Timestamp", y="RollingMean_5", data=df, ax=ax1, label="Media móvil (5)", color="orange", linestyle="--", linewidth=1.2)
+        # Preccio y media móvi
+        sns.lineplot(
+            x="Timestamp", y="price", data=df,
+            ax=ax_price,
+            label="Precio",
+            color="blue",
+            linewidth=1.5,
+            marker="o",
+            markersize=4,
+            ci=None
+        )
 
-        ax1.set_xlabel("Tiempo")
-        ax1.set_ylabel("Precio (€)")
-        ax1.set_title(kwargs.get("title", "Evolución intradía en tiempo real"))
+        sns.lineplot(
+            x="Timestamp", y="RollingMean_5", data=df,
+            ax=ax_price,
+            label="Media móvil (5)",
+            color="orange",
+            linestyle="--",
+            linewidth=1.4,
+            marker=None,
+            ci=None
+        )
 
-        # Eje de la variación porcentual
-        ax2 = ax1.twinx()
-        sns.lineplot(x="Timestamp", y="Perc_Variation", data=df, ax=ax2, color="red", label="Variación %", linewidth=1.0)
-        ax2.set_ylabel("Variación (%)")
+        # Relleno entre precio y media móvil
+        ax_price.fill_between(
+            df["Timestamp"],
+            df["price"],
+            df["RollingMean_5"],
+            color="orange",
+            alpha=0.08,
+            linewidth=0
+        )
 
-        # Combinar las leyendas
-        h1, l1 = ax1.get_legend_handles_labels()
-        h2, l2 = ax2.get_legend_handles_labels()
-        ax1.legend(h1 + h2, l1 + l2, loc="upper left")
+        ax_price.set_xlabel("Tiempo")
+        ax_price.set_ylabel("Precio (€)")
+        ax_price.set_title(title)
+
+        # Variación porcentual en eje secundario
+        ax_var = ax_price.twinx()
+        sns.lineplot(
+            x="Timestamp", y="Perc_Variation", data=df,
+            ax=ax_var,
+            color="red",
+            linewidth=1.0,
+            marker="o",
+            markersize=3,
+            alpha=0.8,
+            ci=None,
+            label="Variación %"
+        )
+        ax_var.set_ylabel("Variación (%)")
+
+        # Centramos el eje y de variación porcentual
+        ypad = max(abs(df["Perc_Variation"].min()), abs(df["Perc_Variation"].max())) * 1.2
+        ax_var.set_ylim(-ypad, ypad)
+
+        # Agrupamos leyendas
+        h_price, l_price = ax_price.get_legend_handles_labels()
+        h_var,   l_var   = ax_var.get_legend_handles_labels()
+
+        ax_price.legend(
+            h_price + h_var,
+            l_price + l_var,
+            loc="upper right",
+            frameon=True,
+            framealpha=0.9
+        )
 
         fig.autofmt_xdate(rotation=45)
+
+        # Menos ruido en cuadrícula
+        ax_price.grid(True, which="major", axis="both", alpha=0.3)
+        ax_var.grid(False)
+
         fig.tight_layout()
         return fig
 
@@ -137,26 +194,74 @@ class PlottingFactory:
             - x_label: str : Etiqueta del eje x. (Opcional)
             - y_label: str : Etiqueta del eje y. (Opcional)
         """
-
         # Extraemos los parámetros necesarios
         x = kwargs.get("x")
-        title = kwargs.get("title", "Gráfico de Densidad")
+        title = kwargs.get("title", "Distribución de la variación porcentual (streaming)")
         x_label = kwargs.get("x_label", x)
         y_label = kwargs.get("y_label", "Densidad")
-        figsize = kwargs.get("figsize", (10, 8))
-        palette = kwargs.get("palette", "Set2")
+        figsize = kwargs.get("figsize", (10, 6))
 
         sns.set_theme(style="whitegrid")
-
-        # Figura
         fig, ax = plt.subplots(figsize=figsize)
-        sns.kdeplot(data=df, x=x, ax=ax, fill=True, alpha=0.6, linewidth=1.5, color="skyblue")
 
-        ax.axvline(0, color='red', linestyle='--') # Línea en 0 como referencia
+        # Recorte automático para que no dominen outliers muy extremos
+        x_vals = df[x].dropna()
+        p_low, p_high = x_vals.quantile([0.01, 0.99])
+        ax.set_xlim(p_low, p_high)
+
+        # Gráfico de densidad
+        sns.kdeplot(
+            data=df, x=x,
+            ax=ax,
+            fill=True,
+            alpha=0.5,
+            linewidth=1.5,
+            color="skyblue"
+        )
+        sns.kdeplot(
+            data=df, x=x,
+            ax=ax,
+            fill=False,
+            alpha=1.0,
+            linewidth=1.0,
+            color="steelblue"
+        )
+
+        # Línea vertical en 0 como referencia neutra
+        ax.axvline(0, color='red', linestyle='--', linewidth=1.2)
+        ax.text(
+            0, ax.get_ylim()[1]*0.9,
+            "0%",
+            color="red",
+            ha="left",
+            va="top",
+            fontsize=9,
+            alpha=0.8
+        )
+
+        # Media de la distribución
+        mean_val = x_vals.mean()
+        ax.axvline(mean_val, color='black', linestyle=':', linewidth=1.2)
+        ax.text(
+            mean_val,
+            ax.get_ylim()[1]*0.9,
+            f"Media: {mean_val:.2f}%",
+            color="black",
+            ha="right" if mean_val > 0 else "left",
+            va="top",
+            fontsize=9,
+            alpha=0.8
+        )
+
+        # Etiquetas
         ax.set_title(title)
         ax.set_xlabel(x_label)
         ax.set_ylabel(y_label)
 
+        # Grid más fino
+        ax.grid(True, alpha=0.2)
+
+        fig.tight_layout()
         return fig
     
 
