@@ -342,7 +342,7 @@ class PlottingFactory:
         categories = kwargs.get("x")
         values = kwargs.get("y")
         title = kwargs.get("title", "Histograma")
-        y_label = kwargs.get("x_label", categories)
+        y_label = "Densidad"
         x_label = kwargs.get("y_label", "Frecuencia")
         bins = kwargs.get("bins", 30)
         figsize = kwargs.get("figsize", (10, 8))
@@ -432,7 +432,7 @@ class PlottingFactory:
         fig, ax = plt.subplots(figsize=figsize)
         sns.boxplot(data=df, x=x, y=y, ax=ax, hue=x, palette=palette, legend=False,
                     meanprops={"marker":"o", "markerfacecolor":"white", "markeredgecolor":"black"})
-        # Opcional: mostrar puntos individuales
+        
         if show_points:
             sns.stripplot(data=df, x=x, y=y, color='black', alpha=0.4, ax=ax, size=2)
 
