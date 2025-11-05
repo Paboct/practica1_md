@@ -42,13 +42,13 @@ def main():
     #plt_ctrl.plotting_seasonal_effect(TICKERS, "hist", "summer")
 
     # Relación precio volumen
-    plt_ctrl.plotting_numerics_features_corr(TICKERS, "Close", "Volume", "scatter")
-    plt_ctrl.plotting_numerics_features_corr(TICKERS, "Close", "Volume", "jointplot")
+    #plt_ctrl.plotting_numerics_features_corr(TICKERS, "Close", "Volume", "scatter")
+    #plt_ctrl.plotting_numerics_features_corr(TICKERS, "Close", "Volume", "jointplot")
 
     # Gráfico datos recibidos en streaming
-    #plt_ctrl.plotting_streaming_data(TICKERS, "line")
-    #plt_ctrl.plotting_streaming_data(TICKERS, "scatter")
-    #plt_ctrl.plotting_streaming_data(TICKERS, "kde")
+    plt_ctrl.plotting_streaming_data(TICKERS, "line")
+    plt_ctrl.plotting_streaming_data(TICKERS, "scatter")
+    plt_ctrl.plotting_streaming_data(TICKERS, "kde")
 
     # Comportamiento del gap de apertura
     #plt_ctrl.plotting_gap_behaviour(TICKERS)
