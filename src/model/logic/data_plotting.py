@@ -126,6 +126,9 @@ class PlottingFactory:
             framealpha=0.9
         )
 
+        # Eliminamos la leyenda del eje secundario
+        ax_var.get_legend().remove()
+
         fig.autofmt_xdate(rotation=45)
 
         # Menos ruido en cuadrícula
